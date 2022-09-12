@@ -1,0 +1,7 @@
+channels:
+  - bioconda
+dependencies:
+  - expansionhunter=4.0.2
+  - pandas=1.4.4
+  - samtools=1.15.1
+  - blast=2.13.0

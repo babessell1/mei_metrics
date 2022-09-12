@@ -1,0 +1,9 @@
+__default__:
+    account: bbessell
+    partition: standard
+    time: 02:00:00 # time limit for each job
+    nodes: 1
+    ntasks-per-node: 16 #Request n cores be allocated per node.
+    chdir: /home/bbessell/mei_metrics/
+    output: mei-%j.out
+    error: mei-%j.err
