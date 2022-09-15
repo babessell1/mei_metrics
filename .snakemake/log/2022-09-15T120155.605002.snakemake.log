@@ -1,0 +1,3 @@
+NameErrorin line 30 of C:\Users\bbessell\Projects\mei_metrics\main.smk:
+name 'stringed_list' is not defined
+  File "C:\Users\bbessell\Projects\mei_metrics\main.smk", line 30, in <module>

@@ -1,0 +1,3 @@
+NameErrorin line 38 of C:\Users\bbessell\Projects\mei_metrics\main.smk:
+free variable 'combinator' referenced before assignment in enclosing scope
+  File "C:\Users\bbessell\Projects\mei_metrics\main.smk", line 38, in <module>

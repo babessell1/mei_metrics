@@ -1,4 +1,9 @@
 BAM_DIR: "/scratch/remills_root/remills/arthurz/Nanopore.data.sharing.box/single_cell.nanopore.seq.06.08.22"
-OUT_DIR: "/scratch/remills_root/remills/bbessell/mei_metrics/output/"
-
-
+OUT_DIR: "/scratch/remills_root/remills99/bbessell/mei_metrics/output"
+SAMPLE_INFO_FILEPATH: "/scratch/remills_root/remills99/bbessell/mei_metrics/samp_info.tsv"
+PALMER_LOC: "/home/bbessell/software/PALMER/PALMER"
+REF_GEN: "/scratch/remills_root/remills/arthurz/Nanopore.data.sharing.box/ref/hg38.no_alt.fa"
+REF_VER: "GRCh38"
+CHROMOSOMES: "chr1, chr2"
+MEI: "LINE"
+MODE: "raw"

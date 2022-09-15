@@ -1,0 +1,4 @@
+FileNotFoundErrorin line 16 of C:\Users\bbessell\Projects\mei_metrics\main.smk:
+[Errno 2] No such file or directory: 'ch2, chr2'
+  File "C:\Users\bbessell\Projects\mei_metrics\main.smk", line 44, in <module>
+  File "C:\Users\bbessell\Projects\mei_metrics\main.smk", line 16, in get_bam_filenames
