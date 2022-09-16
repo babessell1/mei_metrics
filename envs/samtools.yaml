@@ -1,5 +1,6 @@
 channels:
   - bioconda
 dependencies:
-  - samtools=1.15.1
+  - libdeflate=1.13
   - htslib=1.15.1
+  - samtools=1.15.1

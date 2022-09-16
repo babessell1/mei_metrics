@@ -31,27 +31,23 @@ def get_chromosomes(stringed_list: str) -> list[str]:
     return stringed_list.replace(" ", "").split(",")
 
 
-
 rule_all = [
     os.path.join(config["SAMPLE_INFO_FILEPATH"]),  # init or provided
     os.path.join(config["OUT_DIR"], "merged.bam"),  # samtools merge
-    expand(
-        os.path.join(
-            config["OUT_DIR"],
-            "calls",
-            "merged_{chr}_calls.txt"
-        ),  # palmer out 1 merged
-        zip, chr=get_chromosomes(config["CHROMOSOMES"])
-    ),
-    expand(
-        os.path.join(
-            config["OUT_DIR"],
-            "tsd_reads",
-            "merged_{chr}_tsd_reads.txt"
-        ),  # palmer out 2 merged
-        zip, chr=get_chromosomes(config["CHROMOSOMES"])
-    ),
-]  # first step is making sample info file
+    os.path.join(config["OUT_DIR"], "merged.bai"),  # index bam file
+    expand(os.path.join(
+        config["OUT_DIR"],
+        "calls",
+        "merged_{chr}_calls.txt"
+        ), zip, chr=get_chromosomes(config["CHROMOSOMES"])
+    ),  # palmer calls (merged)
+    expand(os.path.join(
+        config["OUT_DIR"],
+        "tsd_reads",
+        "merged_{chr}_tsd_reads.txt"
+        ), zip, chr=get_chromosomes(config["CHROMOSOMES"])
+    ),  # palmer TSD reads (merged)
+]
 
 
 rule all:
@@ -80,6 +76,7 @@ rule merge_bam_files:
         rm temp.txt
         """
 
+
 rule index_merged_bam:
     input: rules.merge_bam_files.output
     output: os.path.join(config["OUT_DIR"], "merged.bai")
@@ -89,12 +86,14 @@ rule index_merged_bam:
         mem_mb = 500
     shell:
         """
-        samtools index -b -o {output}
+        samtools index -b {input} {output}
         """
 
 
 rule run_palmer2_merged:
-    input: rules.merge_bam_files.output
+    input:
+        bam=rules.merge_bam_files.output,
+        bai=rules.index_merged_bam.output
     output:
         calls = os.path.join(config["OUT_DIR"], "calls", "merged_{chr}_calls.txt"),
         tsd = os.path.join(config["OUT_DIR"], "tsd_reads", "merged_{chr}_tsd_reads.txt")
@@ -113,17 +112,19 @@ rule run_palmer2_merged:
     shell:
         """
         {params.palmer} \
-        --input {input} \
-        --workdir {params.out_dir}/temp \
-        --ref_fa {params.fa} \
-        --ref_ver {params.ver} \
-        --type {params.mei} \
-        --mode {params.mode} \
-        --chr {params.chr}
+            --input {input.bam} \
+            --workdir {params.out_dir}/temp/ \
+            --ref_fa {params.fa} \
+            --ref_ver {params.ver} \
+            --type {params.mei} \
+            --mode {params.mode} \
+            --chr {params.chr}
         
-        mv {params.out_dir}/temp/sample_calls.txt {output.calls}
-        mv {params.out_dir}/temp/sample_TSD_reads.txt {output.tsd}
+        mv {params.out_dir}/temp/output_calls.txt {output.calls}
+        mv {params.out_dir}/temp/output_TSD_reads.txt {output.tsd}
         """
+
+
 
 #rule run
 
