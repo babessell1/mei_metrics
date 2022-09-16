@@ -27,25 +27,58 @@ def get_bam_filenames(sample_info_filepath):
 
     return expand(os.path.join(config["OUT_DIR"], "{bam_files}"), bam_files=get_bam_filenames(config["BAM_DIR"]))
 
+
 def get_chromosomes(stringed_list: str) -> list[str]:
-    return stringed_list.replace(" ", "").split(",")
+    try:
+        chroms = stringed_list.replace(" ","").split(",")
+    except:
+        raise SyntaxError(
+            'Please set chromosomes in config.yaml as a string in the format'
+            '"chromosome1, chromosome2, chromosome3, ..."')
+
+    return chroms
+
+
+def get_mei_type(stringed_list: str) -> list[str]:
+    try:
+        meis = stringed_list.replace(" ", "").split(",")
+    except:
+        raise SyntaxError(
+            'Please set MEI type(s) in config.yaml as a string in the format'
+            '"TYPE1, TYPE2, TYPE3, ..."')
+
+    meis = [mei.upper() for mei in meis]
+    if any(mei not in ["LINE", "ALU", "SVA", "HERVK"] for mei in meis):
+        raise ValueError("Accepted MEI types are LINE, ALU, SVA, HERVK")
+
+    return meis
 
 
 rule_all = [
     os.path.join(config["SAMPLE_INFO_FILEPATH"]),  # init or provided
     os.path.join(config["OUT_DIR"], "merged.bam"),  # samtools merge
     os.path.join(config["OUT_DIR"], "merged.bai"),  # index bam file
-    expand(os.path.join(
-        config["OUT_DIR"],
-        "calls",
-        "merged_{chr}_calls.txt"
-        ), zip, chr=get_chromosomes(config["CHROMOSOMES"])
+    expand(
+        os.path.join(
+            config["OUT_DIR"],
+            "calls",
+            "{mei}",
+            "{chr}",
+            "merged_{chr}_{mei}_calls.txt"
+        ),
+        chr=get_chromosomes(config["CHROMOSOMES"]),
+        mei=get_mei_type(config["MEI"])
     ),  # palmer calls (merged)
-    expand(os.path.join(
-        config["OUT_DIR"],
-        "tsd_reads",
-        "merged_{chr}_tsd_reads.txt"
-        ), zip, chr=get_chromosomes(config["CHROMOSOMES"])
+    expand(
+        os.path.join(
+            config["OUT_DIR"],
+            "tsd_reads",
+            "{mei}",
+            "{chr}",
+            "merged_{chr}_{mei}_tsd_reads.txt"
+        ),
+        chr=get_chromosomes(config["CHROMOSOMES"]),
+        mei=get_mei_type(config["MEI"])
     ),  # palmer TSD reads (merged)
 ]
 
@@ -95,15 +128,15 @@ rule run_palmer2_merged:
         bam=rules.merge_bam_files.output,
         bai=rules.index_merged_bam.output
     output:
-        calls = os.path.join(config["OUT_DIR"], "calls", "merged_{chr}_calls.txt"),
-        tsd = os.path.join(config["OUT_DIR"], "tsd_reads", "merged_{chr}_tsd_reads.txt")
+        calls = os.path.join(config["OUT_DIR"], "calls", "{mei}", "{chr}", "merged_{chr}_{mei}_calls.txt"),
+        tsd = os.path.join(config["OUT_DIR"], "tsd_reads", "{mei}", "{chr}", "merged_{chr}_{mei}_tsd_reads.txt")
     params:
         palmer = config["PALMER_LOC"],
         chr = "{chr}",
         fa = config["REF_GEN"],
         ver = config["REF_VER"],
         out_dir = config["OUT_DIR"],
-        mei = config["MEI"].upper(),
+        mei = "{mei}",
         mode = config["MODE"].lower()
     conda: "envs/palmer.yaml"
     threads: 2
@@ -111,19 +144,19 @@ rule run_palmer2_merged:
         mem_mb= 1000*7  # 7 gb
     shell:
         """
+        mkdir -p {params.out_dir}/temp/{params.chr}/{params.mei}
         {params.palmer} \
             --input {input.bam} \
-            --workdir {params.out_dir}/temp/ \
+            --workdir {params.out_dir}/temp/{params.chr}/{params.mei} \
             --ref_fa {params.fa} \
             --ref_ver {params.ver} \
             --type {params.mei} \
             --mode {params.mode} \
             --chr {params.chr}
         
-        mv {params.out_dir}/temp/output_calls.txt {output.calls}
-        mv {params.out_dir}/temp/output_TSD_reads.txt {output.tsd}
+        mv {params.out_dir}/temp/{params.mei}/{params.chr}/output.txt_calls.txt {output.calls}
+        mv {params.out_dir}/temp/{params.mei}/{params.chr}/output.txt_TSD_reads.txt {output.tsd}
         """
-
 
 
 #rule run

@@ -41,15 +41,15 @@ rule make_dirs:  # also checkpoint 1
     input: config["SAMPLE_INFO_FILEPATH"]
     output: os.path.join(config["OUT_DIR"], "checkpoint1.chk")
     params:
-        out_dir = configs["OUT_DIR"]
+        out_dir = config["OUT_DIR"]
     threads: 1
     resources:
         mem_mb=10
     shell:
         """
-        mkdir -p {out_dir}/output
-        mkdir -p {out_dir}/output/temp
-        mkdir -p {out_dir}/output/calls
-        mkdir -p {out_dir}/output/tsd_reads
+        mkdir -p {params.out_dir}
+        mkdir -p {params.out_dir}/temp
+        mkdir -p {params.out_dir}/calls
+        mkdir -p {params.out_dir}/tsd_reads
         touch {output}
         """
