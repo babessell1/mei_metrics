@@ -1,12 +1,11 @@
 import os
 import sys
 from warnings import warn
-
 configfile: "config.yaml"
-
 if not workflow.use_conda:
     sys.stderr.write("\nYou are not using conda. Pass '--use-conda' flag to snakemake.\n")
     sys.exit(1)
+
 
 if not os.path.exists(config["SAMPLE_INFO_FILEPATH"]):
     rule_all = [os.path.join(config["SAMPLE_INFO_FILEPATH"])]  # first step is making sample info file
@@ -23,7 +22,7 @@ rule all:
 rule make_sample_info_file:
     output: config["SAMPLE_INFO_FILEPATH"]
     params:
-        bam_dir = config["BAM_DIR"]
+        bam_dir = config["RAW_DIR"]
     threads: 1
     resources:
         mem_mb = 50
@@ -51,5 +50,6 @@ rule make_dirs:  # also checkpoint 1
         mkdir -p {params.out_dir}/temp
         mkdir -p {params.out_dir}/calls
         mkdir -p {params.out_dir}/tsd_reads
+        mkdir -p logs/palmer/
         touch {output}
         """

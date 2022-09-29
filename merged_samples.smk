@@ -3,55 +3,12 @@ import sys
 import numpy as np
 import pandas as pd
 from warnings import warn
-
-
+from helpers import get_mei_type, get_chromosomes
 configfile: "config.yaml"
 
 if not workflow.use_conda:
     sys.stderr.write("\nYou are not using conda. Pass '--use-conda' flag to snakemake.\n")
     sys.exit(1)
-
-
-def get_bam_filenames(sample_info_filepath):
-    with open(sample_info_filepath) as handle:
-        ln_spl = line.split("\t")
-        filenames = [
-            os.path.join(
-                ln_spl[0],
-                ln_spl[1],
-                ln_spl[2],
-                ln_spl[3],
-                ".bam"
-            ) for line in handle.readlines()
-        ]
-
-    return expand(os.path.join(config["OUT_DIR"], "{bam_files}"), bam_files=get_bam_filenames(config["BAM_DIR"]))
-
-
-def get_chromosomes(stringed_list: str) -> list[str]:
-    try:
-        chroms = stringed_list.replace(" ","").split(",")
-    except:
-        raise SyntaxError(
-            'Please set chromosomes in config.yaml as a string in the format'
-            '"chromosome1, chromosome2, chromosome3, ..."')
-
-    return chroms
-
-
-def get_mei_type(stringed_list: str) -> list[str]:
-    try:
-        meis = stringed_list.replace(" ", "").split(",")
-    except:
-        raise SyntaxError(
-            'Please set MEI type(s) in config.yaml as a string in the format'
-            '"TYPE1, TYPE2, TYPE3, ..."')
-
-    meis = [mei.upper() for mei in meis]
-    if any(mei not in ["LINE", "ALU", "SVA", "HERVK"] for mei in meis):
-        raise ValueError("Accepted MEI types are LINE, ALU, SVA, HERVK")
-
-    return meis
 
 
 rule_all = [
@@ -94,7 +51,7 @@ rule merge_bam_files:
         os.path.join(config["OUT_DIR"], "merged.bam")
     params:
         out_dir = config["OUT_DIR"],
-        bam_dir = config["BAM_DIR"]
+        bam_dir = config["RAW_DIR"]
     conda: "envs/samtools.yaml"
     threads: 1
     resources:
@@ -105,6 +62,7 @@ rule merge_bam_files:
             | tr '\\t' '.' \
             | while read line; do echo "{params.bam_dir}/$line"; done \
             > temp.txt
+            
         samtools merge -1 -o "{params.out_dir}/merged.bam" -b temp.txt
         rm temp.txt
         """
@@ -142,25 +100,25 @@ rule run_palmer2_merged:
     threads: 2
     resources:
         mem_mb= 1000*7  # 7 gb
+    log:
+        out = "logs/palmer/{mei}_{chr}.out",
+        err = "logs/palmer/{mei}_{chr}.err",
     shell:
         """
-        mkdir -p {params.out_dir}/temp/{params.chr}/{params.mei}
+        mkdir -p {params.out_dir}/temp/{params.mei}/{params.chr}
         {params.palmer} \
             --input {input.bam} \
-            --workdir {params.out_dir}/temp/{params.chr}/{params.mei} \
+            --workdir {params.out_dir}/temp/{params.mei}/{params.chr}/ \
             --ref_fa {params.fa} \
             --ref_ver {params.ver} \
             --type {params.mei} \
             --mode {params.mode} \
-            --chr {params.chr}
-        
+            --chr {params.chr} \
+            2> {log.err} 1> {log.out}
+            
         mv {params.out_dir}/temp/{params.mei}/{params.chr}/output.txt_calls.txt {output.calls}
         mv {params.out_dir}/temp/{params.mei}/{params.chr}/output.txt_TSD_reads.txt {output.tsd}
         """
-
-
-#rule run
-
 
 
 
