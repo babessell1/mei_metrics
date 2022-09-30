@@ -51,7 +51,7 @@ def get_mei_type(stringed_list: str) -> list[str]:
 
 
 def exp_samp_ids(samp_ids: list[str]) -> list[str]:
-    with open("temp.txt", "w") as handle:
+    with open("../temp.txt","w") as handle:
         handle.write(
             tabulate(
                 samp_ids * len(get_mei_type(config["MEI"])) * len(get_chromosomes(config["CHROMOSOMES"]))

@@ -1,7 +1,7 @@
 import os
 import sys
 from warnings import warn
-configfile: "config.yaml"
+configfile: "config/config.yaml"
 if not workflow.use_conda:
     sys.stderr.write("\nYou are not using conda. Pass '--use-conda' flag to snakemake.\n")
     sys.exit(1)
@@ -15,8 +15,7 @@ else:
 rule_all.extend([os.path.join(config["OUT_DIR"], "checkpoint1.chk")])
 
 
-rule all:
-    input: rule_all
+rule all: input: rule_all
 
 
 rule make_sample_info_file:

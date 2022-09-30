@@ -1,11 +1,7 @@
 import os
 import sys
-import numpy as np
-import pandas as pd
-from warnings import warn
-from helpers import get_mei_type, get_chromosomes
-configfile: "config.yaml"
-
+from py.helpers import get_mei_type, get_chromosomes
+configfile: "config/config.yaml"
 if not workflow.use_conda:
     sys.stderr.write("\nYou are not using conda. Pass '--use-conda' flag to snakemake.\n")
     sys.exit(1)
@@ -40,8 +36,7 @@ rule_all = [
 ]
 
 
-rule all:
-    input: rule_all
+rule all: input: rule_all
 
 
 rule merge_bam_files:
@@ -86,8 +81,20 @@ rule run_palmer2_merged:
         bam=rules.merge_bam_files.output,
         bai=rules.index_merged_bam.output
     output:
-        calls = os.path.join(config["OUT_DIR"], "calls", "{mei}", "{chr}", "merged_{chr}_{mei}_calls.txt"),
-        tsd = os.path.join(config["OUT_DIR"], "tsd_reads", "{mei}", "{chr}", "merged_{chr}_{mei}_tsd_reads.txt")
+        calls = os.path.join(
+            config["OUT_DIR"],
+            "calls",
+            "{mei}",
+            "{chr}",
+            "merged_{chr}_{mei}_calls.txt"
+        ),
+        tsd = os.path.join(
+            config["OUT_DIR"],
+            "tsd_reads",
+            "{mei}",
+            "{chr}",
+            "merged_{chr}_{mei}_tsd_reads.txt"
+        )
     params:
         palmer = config["PALMER_LOC"],
         chr = "{chr}",
@@ -101,8 +108,8 @@ rule run_palmer2_merged:
     resources:
         mem_mb= 1000*7  # 7 gb
     log:
-        out = "logs/palmer/{mei}_{chr}.out",
-        err = "logs/palmer/{mei}_{chr}.err",
+        out = "logs/palmer/merged_{mei}_{chr}.out",
+        err = "logs/palmer/merged_{mei}_{chr}.err",
     shell:
         """
         mkdir -p {params.out_dir}/temp/{params.mei}/{params.chr}
