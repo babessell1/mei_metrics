@@ -1,4 +1,5 @@
 import yaml
+import os
 from tabulate import tabulate
 
 with open("config/config.yaml", 'r') as handle:
@@ -39,24 +40,21 @@ def get_chromosomes(stringed_list_chroms: str) -> list[str]:
 
 def get_mei_type(stringed_list_meis: str) -> list[str]:
     meis = [mei.upper() for mei in string_to_list(stringed_list_meis)]
-    print(meis)
     if any(mei not in ["LINE", "ALU", "SVA", "HERVK"] for mei in meis):
         raise ValueError("Accepted MEI types are LINE, ALU, SVA, HERVK")
-    print(list(set(meis)))
     return list(set(meis))
 
 
 def get_filter_type(stringed_list_filter: str) -> list[str]:
     filters = string_to_list(stringed_list_filter)
-    print(filters)
     if any(filter_ not in ["raw", "hp1", "hp2", "hp_un", "hp_non"] for filter_ in filters):
         raise ValueError("Accepted filter types are hp1, hp2, un, np")
-    print(list(set(filters)))
+
     return list(set(filters))
 
 
 def exp_samp_ids(samp_ids: list[str]) -> list[str]:
-    with open("../temp.txt", "w") as handle:
+    with open("../../temp.txt", "w") as handle:
         handle.write(
             tabulate(
                 samp_ids*\

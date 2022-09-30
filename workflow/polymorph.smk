@@ -1,6 +1,5 @@
-import os
 import sys
-from py.helpers import *
+from workflow.py.helpers import *
 configfile: "config/config.yaml"
 module merged: snakefile: "merged.smk"
 module individual: snakefile: "individual.smk"

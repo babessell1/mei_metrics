@@ -2,6 +2,7 @@ import os
 import sys
 from py.helpers import get_mei_type, get_chromosomes
 configfile: "config/config.yaml"
+print("cwd: ", os.getcwd())
 if not workflow.use_conda:
     sys.stderr.write("\nYou are not using conda. Pass '--use-conda' flag to snakemake.\n")
     sys.exit(1)

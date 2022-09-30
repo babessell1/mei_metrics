@@ -1,4 +1,3 @@
-import os
 import sys
 from py.helpers import *
 configfile: "config/config.yaml"
