@@ -11,3 +11,5 @@ MEI: "LINE, ALU, SVA, HERVK"
 #MEI: "SVA"
 MODE: "raw"
 FILTERS: "hp1, hp2, raw"
+POLYMORPHS: "HGSVC.MEI.Master.Set.Tier3.20220909.vcf.gz"
+P_FILT: 1

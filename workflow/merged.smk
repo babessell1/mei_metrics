@@ -34,7 +34,23 @@ rule_all = [
         chr=get_chromosomes(config["CHROMOSOMES"]),
         mei=get_mei_type(config["MEI"])
     ),  # palmer TSD reads (merged)
-]
+    expand(
+        os.path.join(
+            config["OUT_DIR"],
+            "calls",
+            "germline_{chr}_{mei}.txt"
+        ),
+        chr=get_chromosomes(config["CHROMOSOMES"]),
+        mei=get_mei_type(config["MEI"])
+    ),
+    expand(
+        os.path.join(config["OUT_DIR"],
+            "bed",
+            "germline_{chr}_{mei}.bed"
+        ),
+        chr=get_chromosomes(config["CHROMOSOMES"]),
+        mei=get_mei_type(config["MEI"])
+    )]
 
 
 rule all: input: rule_all
@@ -127,6 +143,38 @@ rule run_palmer2_merged:
         mv {params.out_dir}/temp/{params.mei}/{params.chr}/output.txt_calls.txt {output.calls}
         mv {params.out_dir}/temp/{params.mei}/{params.chr}/output.txt_TSD_reads.txt {output.tsd}
         """
+
+
+rule germline_filter:
+    input: rules.run_palmer2_merged.output.calls,
+    output:
+        calls=os.path.join(config["OUT_DIR"], "calls", "germline_{chr}_{mei}.txt"),
+        bed=os.path.join(config["OUT_DIR"], "bed", "germline_{chr}_{mei}.bed")
+    params:
+        out_dir = config["OUT_DIR"],
+        bam_dir = config["RAW_DIR"],
+        mei = "{mei}",
+        chr = "{chr}",
+        p_filt = config["P_FILT"]
+    threads: 2
+    resources:
+        mem_mb= 1000*7  # 7 gb
+    log:
+        out = "logs/palmer/merged_{mei}_{chr}.out",
+        err = "logs/palmer/merged_{mei}_{chr}.err",
+    shell:
+        """
+        # drop rows with < n possible supporting reads
+        awk '(NR==1) || ($12 > {params.p_filt} ) ' {input} > {output.calls} >> {log.err}
+        # reformat to bed
+        awk -F, '{{print $2, $3, $4, $1, $14}}' OFS=\t "{output.calls}" > {output.bed} >> {log.err}
+        """
+
+
+
+
+
+
 
 
 
