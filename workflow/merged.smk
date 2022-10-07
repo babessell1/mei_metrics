@@ -164,7 +164,7 @@ rule germline_filter:
         # drop rows with < n possible supporting reads
         awk '(NR>1) && ($12 > 1 ) ' {input} > {output.calls}
         # reformat to bed
-        awk '{{print $2, $3, $4, $1, $14}}' OFS=/t "{output.calls}" > {output.bed}
+        awk '{{ print $2, $3, $4, $1, $14 }}' OFS=\\\\t {output.calls} > {output.bed}
         """
 
 
