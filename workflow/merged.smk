@@ -159,15 +159,12 @@ rule germline_filter:
     threads: 2
     resources:
         mem_mb= 1000*7  # 7 gb
-    log:
-        out = "logs/palmer/merged_{mei}_{chr}.out",
-        err = "logs/palmer/merged_{mei}_{chr}.err",
     shell:
         """
         # drop rows with < n possible supporting reads
-        awk '(NR==1) || ($12 > {params.p_filt} ) ' {input} > {output.calls} >> {log.err}
+        awk '(NR>1) && ($12 > 1 ) ' {input} > {output.calls}
         # reformat to bed
-        awk -F, '{{print $2, $3, $4, $1, $14}}' OFS=\t "{output.calls}" > {output.bed} >> {log.err}
+        awk '{{print $2, $3, $4, $1, $14}}' OFS=/t "{output.calls}" > {output.bed}
         """
 
 

@@ -47,6 +47,7 @@ rule make_dirs:  # also checkpoint 1
         """
         mkdir -p {params.out_dir}
         mkdir -p {params.out_dir}/temp
+        mkdir -p {params.out_dir}/temp/slop/
         mkdir -p {params.out_dir}/calls
         mkdir -p {params.out_dir}/tsd_reads
         mkdir -p {params.out_dir}/bed
