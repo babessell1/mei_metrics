@@ -1,4 +1,5 @@
 import sys
+import math
 from py.helpers import *
 configfile: "config/config.yaml"
 module merged:
@@ -15,7 +16,7 @@ rule_all = [
         os.path.join(
                     config["OUT_DIR"],
                     "polymorphs",
-                    "{chr}_{mei}_germline_polymorphs.vcf"
+                    "{chr}_{mei}_germline_polymorphs.bed"
                 ),
         chr=get_chromosomes(config["CHROMOSOMES"]),
         mei=get_mei_type(config["MEI"])
@@ -32,52 +33,82 @@ rule overlap_polymorph:  # filter out singlets and low reads
         os.path.join(
             config["OUT_DIR"],
             "polymorphs",
-            "{chr}_{mei}_germline_polymorphs.vcf"
+            "{chr}_{mei}_germline_polymorphs.bed"
         )
     params:
+        bedops = config["BEDOPS_BIN"],
         out_dir = config["OUT_DIR"],
         bam_dir = config["RAW_DIR"],
         poly_db = config["POLYMORPHS"],
         mei = "{mei}",
         chr = "{chr}",
-        temp_file = os.path.join(
+        ref= config["REF_TAB"],
+        temp_dir = os.path.join(
+            config["OUT_DIR"],
+            "temp"
+        ),
+        temp_bed = os.path.join(
+        config["OUT_DIR"],
+            "temp",
+            "bed",
+            "{chr}_{mei}_temp.bed"
+            ),
+        vcf_pdb = os.path.join(
             config["OUT_DIR"],
             "temp",
-            "slop",
-            "{chr}_{mei}_slop_temp.bed"
+            "pdb",
+            "vcf",
+            "{chr}_{mei}_pdb.vcf"
         ),
-        ref = config["REF_TAB"]
-    conda: "envs/bed_bam.yaml"
-    threads: 1
+        bed_pdb = os.path.join(
+            config["OUT_DIR"],
+            "temp",
+            "pdb",
+            "bed",
+            "{chr}_{mei}_pdb.bed"
+        ),
+        sorted_pdb= os.path.join(  # polymorph db
+            config["OUT_DIR"],
+            "temp",
+            "sorted",
+            "{chr}_{mei}_sorted_pdb.bed"
+        ),
+        sorted_bed = os.path.join(
+            config["OUT_DIR"],
+            "temp",
+            "sorted",
+            "{chr}_{mei}_sorted.bed"
+        ),
+    threads: 9
     resources:
-        mem_mb = 500*7
+        mem_mb = math.floor(1000*180/9)
+    log:
+        bedops="logs/bedops/{mei}_{chr}.err",
+        #bedtools="logs/bedtools/{mei}_{chr}.err",
     shell:
         """
-        ## table browser cytoband whole genome
-        #bedtools genomecov -i {{input}} -g {{params.ref}}.bed > {{output.cov}}
-        # bedtools slop ( 100 bp )
-        PTEMP="{params.chr}_{params.mei}_{params.poly_db}"  # temp polydb
-        cp {params.poly_db} $PTEMP
-        #gunzip "{{PTEMP}}.gz"
+        mkdir -p {params.temp_dir}/pdb
+        mkdir -p {params.temp_dir}/sorted
+        mkdir -p {params.temp_dir}/pdb/vcf
+        mkdir -p {params.temp_dir}/pdb/bed
+        cp {params.poly_db} {params.vcf_pdb}
         if [[ $(wc -l <{input}) -ge 2 ]]; then
-            bedtools slop \
-                -i {input} \
-                -g {params.ref} \
-                -r 100 -l 100 \
-            > {params.temp_file}
-        fi
-        if [[ -f "{params.temp_file}" ]] ; then
-            bedtools intersect \
-                -a $PTEMP \
-                -b {params.temp_file} \
-                -wo \
-            > {output}
-        fi
-        if [[ ! -f "{params.temp_file}" ]] ; then
+            mkdir -p {params.temp_dir}/pdb/vcf/{params.chr}_{params.mei}
+            mkdir -p {params.temp_dir}/pdb/bed/{params.chr}_{params.mei}
+                awk '$2<$3 {{print}}' {input} > {params.temp_bed}  # remove nonsensical coordinates
+                {params.bedops}/sort-bed {params.temp_bed} > {params.sorted_bed}  # sort input
+                {params.bedops}/convert2bed -i vcf --do-not-sort < {params.vcf_pdb} > {params.bed_pdb}  # vcf to bed 
+                {params.bedops}/sort-bed {params.bed_pdb} > {params.sorted_pdb}  # sort poly db bed
+                {params.bedops}/bedops \
+                    --chrom {params.chr} \
+                    --header \
+                    --range -100:100 \
+                    --element-of 10% {params.sorted_pdb} {params.sorted_bed} \
+                    2>> {log.bedops} 1> {output}
+        else
             touch {output}
-            echo "{params.chr}_{params.mei}" >> {params.out_dir}/polymorphs/no_polymorphs.txt
+            echo "{params.chr}_{params.mei}" >> {params.out_dir}/polymorphs/no_meis.txt
         fi
-        rm -r $PTEMP
         """
 
 
