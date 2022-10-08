@@ -1,6 +1,0 @@
-Building DAG of jobs...
-MissingInputException in rule merge_bam_files in line 57 of C:\Users\bbessell\Projects\mei_metrics\main.smk:
-Missing input files for rule merge_bam_files:
-    output: /scratch/remills_root/remills99/bbessell/mei_metrics/output/merged.bam
-    affected files:
-        /scratch/remills_root/remills99/bbessell/mei_metrics/samp_info.tsv

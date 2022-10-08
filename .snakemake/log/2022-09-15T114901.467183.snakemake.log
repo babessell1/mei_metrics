@@ -1,3 +1,0 @@
-ModuleNotFoundErrorin line 3 of C:\Users\bbessell\Projects\mei_metrics\main.smk:
-No module named 'const'
-  File "C:\Users\bbessell\Projects\mei_metrics\main.smk", line 3, in <module>
