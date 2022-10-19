@@ -17,11 +17,11 @@ rule_all = [
             "{samp_id}_{barcode}_{chr}_{mei}_{filt}_calls.txt",
         ),
         zip,
-        mei=exp_meis(get_mei_type(config["MEI"])),
-        chr=exp_chromosomes(get_chromosomes(config["CHROMOSOMES"])),
-        samp_id=exp_samp_ids(get_samp_id(config["SAMPLE_INFO_FILEPATH"])),
-        barcode=exp_barcodes(get_barcode(config["SAMPLE_INFO_FILEPATH"])),
-        filt=exp_filter_types(get_filter_type(config["FILTERS"]))
+        mei=exp_meis(get_mei_type(config["MEI"]), phased=True),
+        chr=exp_chromosomes(get_chromosomes(config["CHROMOSOMES"]), phased=True),
+        samp_id=exp_samp_ids(get_samp_id(config["PHASED_INFO_FILEPATH"])),
+        barcode=exp_barcodes(get_barcode(config["PHASED_INFO_FILEPATH"])),
+        filt=exp_filter_types(get_filter_type(config["PHASED_INFO_FILEPATH"]))
     ),
     expand(
         os.path.join(
@@ -33,22 +33,39 @@ rule_all = [
             "{samp_id}_{barcode}_{chr}_{mei}_{filt}_tsd_reads.txt"
         ),
         zip,
-        mei=exp_meis(get_mei_type(config["MEI"])),
-        chr=exp_chromosomes(get_chromosomes(config["CHROMOSOMES"])),
-        samp_id=exp_samp_ids(get_samp_id(config["SAMPLE_INFO_FILEPATH"])),
-        barcode=exp_barcodes(get_barcode(config["SAMPLE_INFO_FILEPATH"])),
-        filt=exp_filter_types(get_filter_type(config["FILTERS"]))
+        mei=exp_meis(get_mei_type(config["MEI"]), phased=True),
+        chr=exp_chromosomes(get_chromosomes(config["CHROMOSOMES"]), phased=True),
+        samp_id=exp_samp_ids(get_samp_id(config["PHASED_INFO_FILEPATH"])),
+        barcode=exp_barcodes(get_barcode(config["PHASED_INFO_FILEPATH"])),
+        filt=exp_filter_types(get_filter_type(config["PHASED_INFO_FILEPATH"]))
+    ),
+    expand(
+        os.path.join(
+            config["OUT_DIR"],
+            "bed",
+            "{mei}",
+            "{chr}",
+            "{filt}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}.bed"
+        ),
+        zip,
+        mei=exp_meis(get_mei_type(config["MEI"]),phased=True),
+        chr=exp_chromosomes(get_chromosomes(config["CHROMOSOMES"]),phased=True),
+        samp_id=exp_samp_ids(get_samp_id(config["PHASED_INFO_FILEPATH"])),
+        barcode=exp_barcodes(get_barcode(config["PHASED_INFO_FILEPATH"])),
+        filt=exp_filter_types(get_filter_type(config["PHASED_INFO_FILEPATH"]))
     ),
 ]
 
 
-rule all: input: rule_all
+rule all:
+    input: rule_all
 
 
 rule run_palmer_individual:
     input:
-        bam=lambda wildcards: os.path.join(get_bam_dir(wildcards.filt), "{samp_id}.{barcode}.{filt}.bam"),
-        bai=lambda wildcards: os.path.join(get_bam_dir(wildcards.filt), "{samp_id}.{barcode}.{filt}.bam.bai"),
+        bam=os.path.join(config["PHASED_DIR"],"{samp_id}.{barcode}.{filt}.bam"),
+        bai=os.path.join(config["PHASED_DIR"],"{samp_id}.{barcode}.{filt}.bam.bai")
     output:
         calls=os.path.join(
             config["OUT_DIR"],
@@ -101,4 +118,33 @@ rule run_palmer_individual:
 
         mv "${{TEMP_DIR}}/output.txt_calls.txt" {output.calls}
         mv "${{TEMP_DIR}}/output.txt_TSD_reads.txt" {output.tsd}
+        """
+
+rule indiv_filter:
+    input: rules.run_palmer_individual.output.calls,
+    output:
+        os.path.join(
+            config["OUT_DIR"],
+            "bed",
+            "{mei}",
+            "{chr}",
+            "{filt}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}.bed"
+        )
+    params:
+        out_dir = config["OUT_DIR"],
+        bam_dir = config["PHASED_DIR"],
+        mei = "{mei}",
+        chr = "{chr}",
+        filt="{filt}",
+        barcode="{barcode}",
+        samp_id="{samp_id}",
+        p_filt = config["P_FILT"]
+    threads: 2
+    resources:
+        mem_mb= 1000*7  # 7 gb
+    shell:
+        """
+        # reformat to bed
+        awk '{{ print $2, $3, $5 }}' OFS=\\\\t {input} > {output}
         """

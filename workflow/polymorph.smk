@@ -14,26 +14,42 @@ if not workflow.use_conda:
 rule_all = [
     expand(
         os.path.join(
-                    config["OUT_DIR"],
-                    "polymorphs",
-                    "{chr}_{mei}_germline_polymorphs.bed"
-                ),
-        chr=get_chromosomes(config["CHROMOSOMES"]),
-        mei=get_mei_type(config["MEI"])
+            config["OUT_DIR"],
+            "polymorphs",
+            "{mei}",
+            "{chr}",
+            "{filt}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_polymorphs.bed"
+        ),
+        zip,
+        chr=exp_chromosomes(get_chromosomes(config["CHROMOSOMES"]), germ=True, phased=True),
+        mei=exp_meis(get_mei_type(config["MEI"]), germ=True, phased=True),
+        filt=exp_filter_types(get_filter_type(config["PHASED_INFO_FILEPATH"], germ=True)),
+        samp_id=exp_samp_ids(get_samp_id(config["PHASED_INFO_FILEPATH"], germ=True)),
+        barcode=exp_barcodes(get_barcode(config["PHASED_INFO_FILEPATH"], germ=True))
     )
 ]
-
 
 rule all: input: rule_all
 
 rule overlap_polymorph:  # filter out singlets and low reads
     input:
-        merged_bed=os.path.join(config["OUT_DIR"], "bed", "germline_{chr}_{mei}.bed")  # fix filename inconsistancy
+        os.path.join(
+            config["OUT_DIR"],
+            "bed",
+            "{mei}",
+            "{chr}",
+            "{filt}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}.bed"
+        )
     output:
         os.path.join(
             config["OUT_DIR"],
             "polymorphs",
-            "{chr}_{mei}_germline_polymorphs.bed"
+            "{mei}",
+            "{chr}",
+            "{filt}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_polymorphs.bed"
         )
     params:
         bedops = config["BEDOPS_BIN"],
@@ -42,6 +58,7 @@ rule overlap_polymorph:  # filter out singlets and low reads
         poly_db = config["POLYMORPHS"],
         mei = "{mei}",
         chr = "{chr}",
+        filt = "{filt}",
         ref= config["REF_TAB"],
         temp_dir = os.path.join(
             config["OUT_DIR"],
@@ -51,39 +68,39 @@ rule overlap_polymorph:  # filter out singlets and low reads
         config["OUT_DIR"],
             "temp",
             "bed",
-            "{chr}_{mei}_temp.bed"
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_temp.bed"
             ),
         vcf_pdb = os.path.join(
             config["OUT_DIR"],
             "temp",
             "pdb",
             "vcf",
-            "{chr}_{mei}_pdb.vcf"
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_pdb.vcf"
         ),
         bed_pdb = os.path.join(
             config["OUT_DIR"],
             "temp",
             "pdb",
             "bed",
-            "{chr}_{mei}_pdb.bed"
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_pdb.bed"
         ),
         sorted_pdb= os.path.join(  # polymorph db
             config["OUT_DIR"],
             "temp",
             "sorted",
-            "{chr}_{mei}_sorted_pdb.bed"
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_sorted_pdb.bed"
         ),
         sorted_bed = os.path.join(
             config["OUT_DIR"],
             "temp",
             "sorted",
-            "{chr}_{mei}_sorted.bed"
+            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_sorted.bed"
         ),
     threads: 9
     resources:
         mem_mb = math.floor(1000*180/9)
     log:
-        bedops="logs/bedops/{mei}_{chr}.err",
+        bedops="logs/bedops/{filt}/{mei}/{chr}/{samp_id}_{barcode}_{chr}_{mei}_{filt}.out",
         #bedtools="logs/bedtools/{mei}_{chr}.err",
     shell:
         """
@@ -103,13 +120,15 @@ rule overlap_polymorph:  # filter out singlets and low reads
                     --chrom {params.chr} \
                     --header \
                     --range -100:100 \
-                    --element-of 10% {params.sorted_pdb} {params.sorted_bed} \
-                    2>> {log.bedops} 1> {output}
+                    --intersect {params.sorted_pdb} {params.sorted_bed} \
+                    2> {log.bedops} 1> {output}
         else
             touch {output}
             echo "{params.chr}_{params.mei}" >> {params.out_dir}/polymorphs/no_meis.txt
         fi
         """
+
+
 
 
 

@@ -9,7 +9,7 @@ if not workflow.use_conda:
 
 
 rule_all = [
-    os.path.join(config["SAMPLE_INFO_FILEPATH"]),  # init or provided
+    os.path.join(config["RAW_INFO_FILEPATH"]),  # init or provided
     os.path.join(config["OUT_DIR"], "merged.bam"),  # samtools merge
     os.path.join(config["OUT_DIR"], "merged.bai"),  # index bam file
     expand(
@@ -46,7 +46,10 @@ rule_all = [
     expand(
         os.path.join(config["OUT_DIR"],
             "bed",
-            "germline_{chr}_{mei}.bed"
+            "{mei}",
+            "{chr}",
+            "germline",
+            "germ_germ_{chr}_{mei}_germline.bed"
         ),
         chr=get_chromosomes(config["CHROMOSOMES"]),
         mei=get_mei_type(config["MEI"])
@@ -58,7 +61,7 @@ rule all: input: rule_all
 
 rule merge_bam_files:
     input:
-        sample_info_file = config["SAMPLE_INFO_FILEPATH"],
+        sample_info_file = config["RAW_INFO_FILEPATH"],
     output:
         os.path.join(config["OUT_DIR"], "merged.bam")
     params:
@@ -145,11 +148,17 @@ rule run_palmer2_merged:
         """
 
 
-rule germline_filter:
+rule germline_filter:  # filters rby potential reads and output in format recognizable by polymorph.smk
     input: rules.run_palmer2_merged.output.calls,
     output:
         calls=os.path.join(config["OUT_DIR"], "calls", "germline_{chr}_{mei}.txt"),
-        bed=os.path.join(config["OUT_DIR"], "bed", "germline_{chr}_{mei}.bed")
+        bed=os.path.join(
+            config["OUT_DIR"],
+            "bed",
+            "{mei}",
+            "{chr}",
+            "germline",
+            "germ_germ_{chr}_{mei}_germline.bed")
     params:
         out_dir = config["OUT_DIR"],
         bam_dir = config["RAW_DIR"],

@@ -1,7 +1,8 @@
 RAW_DIR: "raw_reads"
 PHASED_DIR: "phased_reads"
 OUT_DIR: "scratch_ln/output"
-SAMPLE_INFO_FILEPATH: "scratch_ln/samp_info.tsv"
+RAW_INFO_FILEPATH: "scratch_ln/samp_info.tsv"
+PHASED_INFO_FILEPATH: "scratch_ln/phased_info.tsv"
 PALMER_LOC: "/home/bbessell/software/PALMER/PALMER"
 BEDOPS_BIN: "/home/bbessell/software/bedops/bin"
 REF_GEN: "/scratch/remills_root/remills/shared_data/Reference/hg38.no_alt.fa"
@@ -12,6 +13,6 @@ MEI: "LINE, ALU, SVA, HERVK"
 #CHROMOSOMES: "chr21"
 #MEI: "SVA"
 MODE: "raw"
-FILTERS: "hp1, hp2, raw"
+FILTERS: "hp1, hp2"
 POLYMORPHS: "HGSVC.MEI.Master.Set.Tier3.20220909.vcf" # do not include gz extention
 P_FILT: 1
