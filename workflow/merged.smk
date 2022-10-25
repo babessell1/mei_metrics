@@ -2,7 +2,6 @@ import os
 import sys
 from py.helpers import get_mei_type, get_chromosomes
 configfile: "config/config.yaml"
-print("cwd: ", os.getcwd())
 if not workflow.use_conda:
     sys.stderr.write("\nYou are not using conda. Pass '--use-conda' flag to snakemake.\n")
     sys.exit(1)
@@ -12,7 +11,7 @@ rule_all = [
     os.path.join(config["RAW_INFO_FILEPATH"]),  # init or provided
     os.path.join(config["OUT_DIR"], "merged.bam"),  # samtools merge
     os.path.join(config["OUT_DIR"], "merged.bai"),  # index bam file
-    expand(
+    expand(  # merged palmer calls
         os.path.join(
             config["OUT_DIR"],
             "calls",
@@ -22,8 +21,8 @@ rule_all = [
         ),
         chr=get_chromosomes(config["CHROMOSOMES"]),
         mei=get_mei_type(config["MEI"])
-    ),  # palmer calls (merged)
-    expand(
+    ),
+    expand(  # merged palmer TSDs
         os.path.join(
             config["OUT_DIR"],
             "tsd_reads",
@@ -33,8 +32,8 @@ rule_all = [
         ),
         chr=get_chromosomes(config["CHROMOSOMES"]),
         mei=get_mei_type(config["MEI"])
-    ),  # palmer TSD reads (merged)
-    expand(
+    ),
+    expand(  # germline approximation (calls > P_filt, default 1)
         os.path.join(
             config["OUT_DIR"],
             "calls",
@@ -43,7 +42,7 @@ rule_all = [
         chr=get_chromosomes(config["CHROMOSOMES"]),
         mei=get_mei_type(config["MEI"])
     ),
-    expand(
+    expand(  #  convert to bed
         os.path.join(config["OUT_DIR"],
             "bed",
             "{mei}",
@@ -53,7 +52,8 @@ rule_all = [
         ),
         chr=get_chromosomes(config["CHROMOSOMES"]),
         mei=get_mei_type(config["MEI"])
-    )]
+    )
+]
 
 
 rule all: input: rule_all
@@ -148,7 +148,7 @@ rule run_palmer2_merged:
         """
 
 
-rule germline_filter:  # filters rby potential reads and output in format recognizable by polymorph.smk
+rule germline_filter:  # filters by potential reads to appx germline and output in format recognizable by overlap.smk
     input: rules.run_palmer2_merged.output.calls,
     output:
         calls=os.path.join(config["OUT_DIR"], "calls", "germline_{chr}_{mei}.txt"),
@@ -164,14 +164,14 @@ rule germline_filter:  # filters rby potential reads and output in format recogn
         bam_dir = config["RAW_DIR"],
         mei = "{mei}",
         chr = "{chr}",
-        p_filt = config["P_FILT"]
+        p_filt = int(config["P_FILT"])
     threads: 2
     resources:
         mem_mb= 1000*7  # 7 gb
     shell:
         """
         # drop rows with < n possible supporting reads
-        awk '(NR>1) && ($12 > 1 ) ' {input} > {output.calls}
+        awk '(NR>1) && ($12 > {params.p_filt} ) ' {input} > {output.calls}
         # reformat to bed
         awk '{{ print $2, $3, $5 }}' OFS=\\\\t {output.calls} > {output.bed}
         """

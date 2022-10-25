@@ -4,7 +4,7 @@ OUT_DIR: "scratch_ln/output"
 RAW_INFO_FILEPATH: "scratch_ln/samp_info.tsv"
 PHASED_INFO_FILEPATH: "scratch_ln/phased_info.tsv"
 PALMER_LOC: "/home/bbessell/software/PALMER/PALMER"
-BEDOPS_BIN: "/home/bbessell/software/bedops/bin"
+BEDOPS_BIN: "/home/bbessell/software/bedops/bin"  # not venv bc you should use megarow build to prevent segfaults
 REF_GEN: "/scratch/remills_root/remills/shared_data/Reference/hg38.no_alt.fa"
 REF_TAB: "GRCh38.genome"
 REF_VER: "GRCh38"
@@ -14,5 +14,6 @@ MEI: "LINE, ALU, SVA, HERVK"
 #MEI: "SVA"
 MODE: "raw"
 FILTERS: "hp1, hp2"
-POLYMORPHS: "HGSVC.MEI.Master.Set.Tier3.20220909.vcf" # do not include gz extention
+POLYMORPHS: "HGSVC.MEI.Master.Set.Tier3.20220909.vcf"
 P_FILT: 1
+SLOP: 500

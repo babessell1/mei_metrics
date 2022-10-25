@@ -6,54 +6,54 @@ if not workflow.use_conda:
     sys.exit(1)
 
 
-rule_all = [
-    expand(
+rule_all = [  # rule all takes outputs of all other rules as inputs
+    expand(  # palmer calls
         os.path.join(
             config["OUT_DIR"],
             "calls",
             "{mei}",
             "{chr}",
-            "{filt}",
-            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_calls.txt",
+            "{haplo}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{haplo}_calls.txt",
         ),
         zip,
         mei=exp_meis(get_mei_type(config["MEI"]), phased=True),
         chr=exp_chromosomes(get_chromosomes(config["CHROMOSOMES"]), phased=True),
         samp_id=exp_samp_ids(get_samp_id(config["PHASED_INFO_FILEPATH"])),
         barcode=exp_barcodes(get_barcode(config["PHASED_INFO_FILEPATH"])),
-        filt=exp_filter_types(get_filter_type(config["PHASED_INFO_FILEPATH"]))
+        haplo=exp_haplo_types(get_haplo_type(config["PHASED_INFO_FILEPATH"]))
     ),
-    expand(
+    expand(  # palmer tsds
         os.path.join(
             config["OUT_DIR"],
             "tsd_reads",
             "{mei}",
             "{chr}",
-            "{filt}",
-            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_tsd_reads.txt"
+            "{haplo}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{haplo}_tsd_reads.txt"
         ),
         zip,
         mei=exp_meis(get_mei_type(config["MEI"]), phased=True),
         chr=exp_chromosomes(get_chromosomes(config["CHROMOSOMES"]), phased=True),
         samp_id=exp_samp_ids(get_samp_id(config["PHASED_INFO_FILEPATH"])),
         barcode=exp_barcodes(get_barcode(config["PHASED_INFO_FILEPATH"])),
-        filt=exp_filter_types(get_filter_type(config["PHASED_INFO_FILEPATH"]))
+        haplo=exp_haplo_types(get_haplo_type(config["PHASED_INFO_FILEPATH"]))
     ),
-    expand(
+    expand(  #  call txt to bam
         os.path.join(
             config["OUT_DIR"],
             "bed",
             "{mei}",
             "{chr}",
-            "{filt}",
-            "{samp_id}_{barcode}_{chr}_{mei}_{filt}.bed"
+            "{haplo}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{haplo}.bed"
         ),
         zip,
         mei=exp_meis(get_mei_type(config["MEI"]),phased=True),
         chr=exp_chromosomes(get_chromosomes(config["CHROMOSOMES"]),phased=True),
         samp_id=exp_samp_ids(get_samp_id(config["PHASED_INFO_FILEPATH"])),
         barcode=exp_barcodes(get_barcode(config["PHASED_INFO_FILEPATH"])),
-        filt=exp_filter_types(get_filter_type(config["PHASED_INFO_FILEPATH"]))
+        haplo=exp_haplo_types(get_haplo_type(config["PHASED_INFO_FILEPATH"]))
     ),
 ]
 
@@ -64,24 +64,24 @@ rule all:
 
 rule run_palmer_individual:
     input:
-        bam=os.path.join(config["PHASED_DIR"],"{samp_id}.{barcode}.{filt}.bam"),
-        bai=os.path.join(config["PHASED_DIR"],"{samp_id}.{barcode}.{filt}.bam.bai")
+        bam=os.path.join(config["PHASED_DIR"],"{samp_id}.{barcode}.{haplo}.bam"),
+        bai=os.path.join(config["PHASED_DIR"],"{samp_id}.{barcode}.{haplo}.bam.bai")
     output:
         calls=os.path.join(
             config["OUT_DIR"],
             "calls",
             "{mei}",
             "{chr}",
-            "{filt}",
-            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_calls.txt",
+            "{haplo}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{haplo}_calls.txt",
         ),
         tsd=os.path.join(
             config["OUT_DIR"],
             "tsd_reads",
             "{mei}",
             "{chr}",
-            "{filt}",
-            "{samp_id}_{barcode}_{chr}_{mei}_{filt}_tsd_reads.txt"
+            "{haplo}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{haplo}_tsd_reads.txt"
         ),
     params:
         palmer=config["PALMER_LOC"],
@@ -93,18 +93,18 @@ rule run_palmer_individual:
         mode=config["MODE"].lower(),
         barcode="{barcode}",
         samp_id="{samp_id}",
-        filt="{filt}",
+        haplo="{haplo}",
     conda: "envs/palmer.yaml"
     threads: 2
     resources:
         mem_mb=1000 * 7  # 7 gb
     log:
-        out="logs/palmer/{filt}/{mei}/{chr}/{samp_id}_{barcode}_{chr}_{mei}_{filt}.out",
-        err="logs/palmer/{filt}/{mei}/{chr}/{samp_id}_{barcode}_{chr}_{mei}_{filt}.err",
+        out="logs/palmer/{haplo}/{mei}/{chr}/{samp_id}_{barcode}_{chr}_{mei}_{haplo}.out",
+        err="logs/palmer/{haplo}/{mei}/{chr}/{samp_id}_{barcode}_{chr}_{mei}_{haplo}.err",
     shell:
         """
-        TEMP_DIR="{params.out_dir}/temp/{params.filt}/{params.mei}/{params.chr}/{params.samp_id}/{params.barcode}"
-        mkdir -p logs/palmer/{params.filt}/{params.mei}/{params.chr}/
+        TEMP_DIR="{params.out_dir}/temp/{params.haplo}/{params.mei}/{params.chr}/{params.samp_id}/{params.barcode}"
+        mkdir -p logs/palmer/{params.haplo}/{params.mei}/{params.chr}/
         mkdir -p $TEMP_DIR
         {params.palmer} \
             --input {input.bam} \
@@ -123,28 +123,38 @@ rule run_palmer_individual:
 rule indiv_filter:
     input: rules.run_palmer_individual.output.calls,
     output:
-        os.path.join(
+        calls = os.path.join(
+            config["OUT_DIR"],
+            "calls",
+            "{mei}",
+            "{chr}",
+            "{haplo}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{haplo}.txt"
+        ),
+        bed = os.path.join(
             config["OUT_DIR"],
             "bed",
             "{mei}",
             "{chr}",
-            "{filt}",
-            "{samp_id}_{barcode}_{chr}_{mei}_{filt}.bed"
+            "{haplo}",
+            "{samp_id}_{barcode}_{chr}_{mei}_{haplo}.bed"
         )
     params:
         out_dir = config["OUT_DIR"],
         bam_dir = config["PHASED_DIR"],
         mei = "{mei}",
         chr = "{chr}",
-        filt="{filt}",
+        haplo="{haplo}",
         barcode="{barcode}",
         samp_id="{samp_id}",
-        p_filt = config["P_FILT"]
+        p_haplo = config["P_FILT"],
     threads: 2
     resources:
         mem_mb= 1000*7  # 7 gb
     shell:
         """
+        # drop header
+        awk '(NR>1) ' {input} > {output.calls}
         # reformat to bed
-        awk '{{ print $2, $3, $5 }}' OFS=\\\\t {input} > {output}
+        awk '{{ print $2, $3, $5 }}' OFS=\\\\t {output.calls} > {output.bed}
         """

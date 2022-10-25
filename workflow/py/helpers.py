@@ -39,7 +39,7 @@ def get_barcode(sample_info_filepath: str, germ=False) -> list[str]:
     return bars
 
 
-def get_filter_type(sample_info_filepath: str, germ=False) -> list[str]:
+def get_haplo_type(sample_info_filepath: str, germ=False) -> list[str]:
     with open(sample_info_filepath) as handle:
         ids = [line.split("\t")[2] for line in handle.readlines()]
     if germ:
@@ -62,17 +62,17 @@ def get_mei_type(stringed_list_meis: str) -> list[str]:
     return list(set(meis))
 
 
-def get_filter_type_bad(stringed_list_filter: str, germ=False) -> list[str]:
-    filters = string_to_list(stringed_list_filter)
-    if any(filter_ not in ["raw", "hp1", "hp2", "hp_un", "hp_non"] for filter_ in filters):
-        raise ValueError("Accepted filter types are hp1, hp2, un, np")
+def get_haplo_type_bad(stringed_list_haplo: str, germ=False) -> list[str]:
+    haplos = string_to_list(stringed_list_haplo)
+    if any(haplo_ not in ["raw", "hp1", "hp2", "hp_un", "hp_non"] for haplo_ in haplos):
+        raise ValueError("Accepted haplo types are hp1, hp2, un, np")
     if germ:
-        filters.append("germline")
+        haplos.append("germline")
 
-    return list(set(filters))
+    return list(set(haplos))
 
 
-def exp_samp_ids(samp_ids: list[str]) -> list[str]:  # expand sample ids to generate zipped wildcards with all combos
+def exp_samp_ids(samp_ids: list[str]) -> list[str]:  # expand sample ids to generate zipped wildcards with all permutes
     return samp_ids*\
         len(get_mei_type(config["MEI"]))*\
         len(get_chromosomes(config["CHROMOSOMES"]))
@@ -84,8 +84,8 @@ def exp_barcodes(barcodes: list[str]) -> list[str]:
         len(get_chromosomes(config["CHROMOSOMES"]))
 
 
-def exp_filter_types(filter_types: list[str]) -> list[str]:
-    return filter_types*\
+def exp_haplo_types(haplo_types: list[str]) -> list[str]:
+    return haplo_types*\
        len(get_chromosomes(config["CHROMOSOMES"]))*\
        len(get_mei_type(config["MEI"]))
 
@@ -106,8 +106,8 @@ def exp_meis(meis: list[str], germ=False, phased=False) -> list[str]:
                              ) for x in meis))*len(get_chromosomes(config["CHROMOSOMES"]))
 
 
-def get_bam_dir(filt: str) -> str:
-    return config["RAW_DIR"] if filt == "raw" else config["PHASED_DIR"]
+def get_bam_dir(haplo: str) -> str:
+    return config["RAW_DIR"] if haplo == "raw" else config["PHASED_DIR"]
 
 
 
